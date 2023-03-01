@@ -80,42 +80,39 @@ const create = async (req, res) => {
       case 2: {
         const userId = user.get().id
         const { nombre, direccion, fechaNacimiento } = req.body
+        const userSession = req.user
 
-        await req.sessionStore.get(req.sessionID, async (_err, data) => {
-          if (data === undefined) {
-            // destroy the main user if does not exist active session
+        if (!userSession) {
+          await User.destroy({
+            where: { id: userId }
+          })
+          res.json({ msg: MESSAGES.SESSION_FAILED })
+        } else {
+          if (userSession.rolId !== 1) {
             await User.destroy({
               where: { id: userId }
             })
-            res.json({ msg: MESSAGES.SESSION_FAILED })
+            return res.json({ msg: MESSAGES.USER_PERMISSIONS })
           } else {
-            const userSession = req.session.user
-            if (userSession.rolId !== 1) {
-              await User.destroy({
-                where: { id: userId }
+            const doctor = await Doctor.create({
+              nombre,
+              direccion,
+              fecha_nacimiento: fechaNacimiento
+            }).catch((err) => {
+              const errors = err.errors.map((item) => {
+                return {
+                  msg: item.message
+                }
               })
-              return res.json({ msg: MESSAGES.USER_PERMISSIONS })
-            } else {
-              const doctor = await Doctor.create({
-                nombre,
-                direccion,
-                fecha_nacimiento: fechaNacimiento
-              }).catch((err) => {
-                const errors = err.errors.map((item) => {
-                  return {
-                    msg: item.message
-                  }
-                })
-                res.status(409).json(errors)
-              })
+              res.status(409).json(errors)
+            })
 
-              if (!res.headersSent) {
-                const doctorId = doctor.get().id
-                createNewPerson(res, { userId, roleId: rol, identifier: doctorId })
-              }
+            if (!res.headersSent) {
+              const doctorId = doctor.get().id
+              createNewPerson(res, { userId, roleId: rol, identifier: doctorId })
             }
           }
-        })
+        }
         break
       }
 
