@@ -14,7 +14,7 @@ const roleData = [
 
 const main = async () => {
   try {
-    await sequelize.sync({ alter: true }) // force just for training purposes => prod = { alter: true }
+    await sequelize.sync({ force: true }) // force just for training purposes => prod = { alter: true }
     console.log('Database connection established')
     await Role.bulkCreate(roleData)
     app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
