@@ -1,10 +1,11 @@
 const { create, getAll, getOne, recoverPassword, remove, update, newPassword } = require('../sequelize/controllers/user')
+const { authUsers } = require('../middleware/auth')
 const express = require('express')
 const router = express.Router()
 
 router.route('/')
   .get(getAll)
-  .post(create)
+  .post(authUsers, create)
 
 router.route('/:id')
   .get(getOne)
