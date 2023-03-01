@@ -10,67 +10,64 @@ const MESSAGES = {
 // Revisar sesión con rol => las observaciones solo pueden ser registradas por un usuario médico
 const create = async (req, res) => {
   const { hospitalId, medicoId, pacienteId, especialidad, detalle } = req.body
+  const userSession = req.user
 
-  await req.sessionStore.get(req.sessionID, async (_err, data) => {
-    if (data === undefined) {
-      return res.json({ msg: MESSAGES.SESSION_FAILED })
-    } else {
-      const userSession = req.session.user
-      if (userSession.rolId === 2) {
-        const observation = await Observation.create({
-          hospital_id: hospitalId,
-          medico_id: medicoId,
-          paciente_id: pacienteId,
-          especialidad,
-          detalle
-        }).catch((err) => {
-          const errors = err.errors.map((item) => {
-            return {
-              msg: item.message
-            }
-          })
-          res.status(409).json(errors)
+  if (!userSession) {
+    return res.json({ msg: MESSAGES.SESSION_FAILED })
+  } else {
+    if (userSession.rolId === 2) {
+      const observation = await Observation.create({
+        hospital_id: hospitalId,
+        medico_id: medicoId,
+        paciente_id: pacienteId,
+        especialidad,
+        detalle
+      }).catch((err) => {
+        const errors = err.errors.map((item) => {
+          return {
+            msg: item.message
+          }
         })
-        if (!res.headersSent) return res.status(201).json(observation)
-      } else {
-        return res.json({ msg: MESSAGES.USER_PERMISSIONS })
-      }
+        res.status(409).json(errors)
+      })
+      if (!res.headersSent) return res.status(201).json(observation)
+    } else {
+      return res.json({ msg: MESSAGES.USER_PERMISSIONS })
     }
-  })
+  }
 }
 
 const getAll = async (req, res) => {
-  await req.sessionStore.get(req.sessionID, async (_err, data) => {
-    if (data === undefined) return res.json({ msg: MESSAGES.SESSION_FAILED })
-    else {
-      const userSession = req.session.user
+  const userSession = req.user
 
-      switch (userSession.rolId) {
-        case 1: {
-          const observations = Observation.findAll({
-            where: { hospital_id: userSession.identifier }
-          })
-          res.json(observations)
-          break
-        }
-        case 2: {
-          const observations = Observation.findAll({
-            where: { medico_id: userSession.identifier }
-          })
-          res.json(observations)
-          break
-        }
-        case 3: {
-          const observations = Observation.findAll({
-            where: { paciente_id: userSession.identifier }
-          })
-          res.json(observations)
-          break
-        }
-        default: { break }
+  if (!userSession) {
+    return res.json({ msg: MESSAGES.SESSION_FAILED })
+  } else {
+    switch (userSession.rolId) {
+      case 1: {
+        const observations = Observation.findAll({
+          where: { hospital_id: userSession.identifier }
+        })
+        res.json(observations)
+        break
       }
+      case 2: {
+        const observations = Observation.findAll({
+          where: { medico_id: userSession.identifier }
+        })
+        res.json(observations)
+        break
+      }
+      case 3: {
+        const observations = Observation.findAll({
+          where: { paciente_id: userSession.identifier }
+        })
+        res.json(observations)
+        break
+      }
+      default: { break }
     }
-  })
+  }
 }
 
 const remove = async (req, res) => {
