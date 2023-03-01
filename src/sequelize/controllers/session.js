@@ -40,7 +40,7 @@ const login = async (req, res) => {
     }
 
     req.session.user = usuario
-    return res.send(LOGIN_SUCCESS)
+    return res.json({ msg: LOGIN_SUCCESS })
   } else {
     return res.json({ msg: CREDENTIALS_NOT_FOUND })
   }

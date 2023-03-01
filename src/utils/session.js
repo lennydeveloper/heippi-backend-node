@@ -1,10 +1,12 @@
 const Cryptr = require('cryptr')
 const cryptr = new Cryptr('myTotallySecretKey')
 
+const SESSION_FAILED = 'La sesión no existe, por favor ingrese nuevamente'
+
 const validateSession = async (req, res) => {
   await req.sessionStore.get(req.sessionID, (_err, data) => {
     if (data === undefined) {
-      res.send('La sesión no existe, por favor ingrese nuevamente')
+      res.json({ msg: SESSION_FAILED })
     }
   })
 }
