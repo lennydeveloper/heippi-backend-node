@@ -78,32 +78,41 @@ const create = async (req, res) => {
       }
 
       case 2: {
+        const userId = user.get().id
         const { nombre, direccion, fechaNacimiento } = req.body
+
         await req.sessionStore.get(req.sessionID, async (_err, data) => {
-          if (data === undefined) res.send(MESSAGES.SESSION_FAILED)
-          const userSession = req.session.user
-
-          if (userSession.rolId !== 1) {
-            return res.json({ msg: MESSAGES.USER_PERMISSIONS })
-          } else {
-            const doctor = await Doctor.create({
-              nombre,
-              direccion,
-              fecha_nacimiento: fechaNacimiento
-            }).catch((err) => {
-              const errors = err.errors.map((item) => {
-                return {
-                  msg: item.message
-                }
-              })
-              res.status(409).json(errors)
+          if (data === undefined) {
+            // destroy the main user if does not exist active session
+            await User.destroy({
+              where: { id: userId }
             })
+            res.json({ msg: MESSAGES.SESSION_FAILED })
+          } else {
+            const userSession = req.session.user
+            if (userSession.rolId !== 1) {
+              await User.destroy({
+                where: { id: userId }
+              })
+              return res.json({ msg: MESSAGES.USER_PERMISSIONS })
+            } else {
+              const doctor = await Doctor.create({
+                nombre,
+                direccion,
+                fecha_nacimiento: fechaNacimiento
+              }).catch((err) => {
+                const errors = err.errors.map((item) => {
+                  return {
+                    msg: item.message
+                  }
+                })
+                res.status(409).json(errors)
+              })
 
-            if (!res.headersSent) {
-              const userId = user.get().id
-              const doctorId = doctor.get().id
-
-              createNewPerson(res, { userId, roleId: rol, identifier: doctorId })
+              if (!res.headersSent) {
+                const doctorId = doctor.get().id
+                createNewPerson(res, { userId, roleId: rol, identifier: doctorId })
+              }
             }
           }
         })
