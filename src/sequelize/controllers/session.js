@@ -2,6 +2,8 @@ const User = require('../models/User')
 const Person = require('../models/Person')
 const { decryptPassword } = require('../../utils/session')
 const op = require('sequelize').Op
+const jwt = require('jsonwebtoken')
+require('dotenv').config()
 
 const USER_NOT_FOUND = 'Usuario no encontrado'
 const CREDENTIALS_NOT_FOUND = 'Credenciales no válidas'
@@ -39,7 +41,11 @@ const login = async (req, res) => {
       userId: persons[0].usuario_id
     }
 
-    req.session.user = usuario
+    const token = jwt.sign(usuario, process.env.SECRET, { expiresIn: '30m' })
+    res.cookie('token', token, {
+      httpOnly: false
+      // secure: true
+    })
     return res.json({ msg: LOGIN_SUCCESS })
   } else {
     return res.json({ msg: CREDENTIALS_NOT_FOUND })
